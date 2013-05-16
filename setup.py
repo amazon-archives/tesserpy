@@ -2,6 +2,7 @@
 
 from distutils.core import setup, Extension
 import subprocess
+import numpy
 import os
 
 kVersionBase = '0.1dev'
@@ -10,14 +11,15 @@ version = kVersionBase + subprocess.check_output(['git', 'describe', '--dirty', 
 
 setup(
 		name = 'tesserpy',
-		version = '44f5b82-dirty',
+		version = version,
 		description = 'Python interface to the Tesseract library',
 		maintainer = 'Kevin Rauwolf',
 		maintainer_email = 'kevin@blindsight.com',
 		url = 'https://github.com/blindsightcorp/tesserpy',
+		requires = ['numpy', ],
 		ext_modules = [
 			Extension('tesserpy', ['tesserpy.cpp', ],
-				include_dirs = ['../libs/leptonica/current/darwin-x86_64/release/include', '../libs/tesseract/current/darwin-x86_64/release/include'], # FIXME
+				include_dirs = ['../libs/leptonica/current/darwin-x86_64/release/include', '../libs/tesseract/current/darwin-x86_64/release/include', numpy.get_include()], # FIXME
 				library_dirs = ['../libs/leptonica/current/darwin-x86_64/release/lib', '../libs/tesseract/current/darwin-x86_64/release/lib'], # FIXME
 				libraries = ['lept', 'tesseract'],
 			),
