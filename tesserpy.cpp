@@ -65,12 +65,7 @@ static PyTypeObject PyTesseract_Type = {
 
 #define PyTesseract_Check(v) (Py_TYPE(v) == &PyTesseract_Type)
 
-static PyTesseract* PyTesseract_new(PyObject *type, PyObject *args, PyObject* /* kw */) {
-	char *tessdata_prefix = NULL;
-	if (!PyArg_ParseTuple(args, "s;Constructor requires the TESSDATA_PREFIX path", &tessdata_prefix)) {
-		return NULL;
-	}
-	setenv("TESSDATA_PREFIX", tessdata_prefix, 1);
+static PyTesseract* PyTesseract_new(PyObject *type, PyObject* /* args */, PyObject* /* kw */) {
 	PyTesseract *self = PyObject_New(PyTesseract, &PyTesseract_Type);
 	if (self == NULL) {
 		return NULL;
