@@ -24,6 +24,7 @@ import cv2
 import tesserpy
 
 tess = tesserpy.Tesseract("/path/to/tessdata/prefix", language="eng")
+# Anything exposed by SetVariable / GetVariableAsString is an attribute
 tess.tessedit_char_whitelist = """'"!@#$%^&*()_+-=[]{};,.<>/?`~abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"""
 image = cv2.imread('/path/to/image.png')
 tess.set_image(image)
