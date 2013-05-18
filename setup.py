@@ -19,9 +19,8 @@ setup(
 		requires = ['numpy', ],
 		ext_modules = [
 			Extension('tesserpy', ['tesserpy.cpp', ],
-				include_dirs = ['../libs/leptonica/current/darwin-x86_64/release/include', '../libs/tesseract/current/darwin-x86_64/release/include', numpy.get_include()], # FIXME
-				library_dirs = ['../libs/leptonica/current/darwin-x86_64/release/lib', '../libs/tesseract/current/darwin-x86_64/release/lib'], # FIXME
-				libraries = ['lept', 'tesseract'],
+				libraries = ['tesseract', ],
+				include_dirs = [numpy.get_include(), ],
 			),
 		]
 )
