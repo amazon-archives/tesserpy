@@ -14,18 +14,22 @@ typedef struct {
 extern "C" {
 	static PyTesseract* PyTesseract_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 	static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs);
+	static PyObject* PyTesseract_clear(PyTesseract *self);
 	static int PyTesseract_setattr(PyTesseract *self, PyObject *attr, PyObject *value);
 	static PyObject* PyTesseract_getattr(PyTesseract *self, PyObject *attr);
 	static PyObject* PyTesseract_set_image(PyTesseract *self, PyObject *args);
 	static PyObject* PyTesseract_set_rectangle(PyTesseract *self, PyObject *args, PyObject *kwargs);
 	static PyObject* PyTesseract_get_utf8_text(PyTesseract *self);
+	static PyObject* PyTesseract_mean_text_conf(PyTesseract *self);
 	static void PyTesseract_dealloc(PyTesseract *self);
 }
 
 static PyMethodDef PyTesseract_methods[] = {
+	{ "clear", (PyCFunction)PyTesseract_clear, METH_NOARGS, PyDoc_STR("clear()\n\nFrees up recognition results and any stored image data") },
 	{ "set_image", (PyCFunction)PyTesseract_set_image, METH_O, PyDoc_STR("set_image(image)\n\nProvides an image for Tesseract to recognize") },
 	{ "set_rectangle", (PyCFunction)PyTesseract_set_rectangle, METH_KEYWORDS, PyDoc_STR("set_rectangle(left, top, width, height)\n\nRestricts recognition to a sub-rectangle of the image.") },
 	{ "get_utf8_text", (PyCFunction)PyTesseract_get_utf8_text, METH_NOARGS, PyDoc_STR("get_utf8_text()\n\nReturns recognized text.") },
+	{ "mean_text_conf", (PyCFunction)PyTesseract_mean_text_conf, METH_NOARGS, PyDoc_STR("mean_text_conf()\n\nReturns the average word confidence value, between 0 and 100, for the Tesseract page result") },
 	{ NULL, NULL } // sentinel
 };
 
@@ -130,6 +134,15 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 		PyErr_SetString(PyExc_EnvironmentError, "Error initializing Tesseract");
 	}
 	return result;
+}
+
+static PyObject* PyTesseract_clear(PyTesseract *self) {
+	self->tess->Clear();
+	if (self->image) {
+		Py_CLEAR(self->image);
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static int PyTesseract_setattr(PyTesseract *self, PyObject *attr, PyObject *py_value) {
@@ -254,6 +267,11 @@ static PyObject* PyTesseract_get_utf8_text(PyTesseract *self) {
 	delete(text);
 	text = NULL;
 	return unicode;
+}
+
+static PyObject* PyTesseract_mean_text_conf(PyTesseract *self) {
+	int confidence = self->tess->MeanTextConf();
+	return PyInt_FromLong(confidence);
 }
 
 static PyMethodDef TesserPyMethods[] = {
