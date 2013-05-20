@@ -136,7 +136,7 @@ static int PyTesseract_setattr(PyTesseract *self, PyObject *attr, PyObject *py_v
 	// attribute name must be a string, but value will be converted with str()
 	char *name = PyString_AsString(attr);
 	if (!name) {
-		PyErr_SetString(PyExc_TypeError, "Attribute name is not a string");
+		PyErr_SetString(PyExc_TypeError, "Attribute name must be a string");
 		return -1;
 	}
 
