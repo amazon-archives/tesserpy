@@ -29,4 +29,9 @@ tess.tessedit_char_whitelist = """'"!@#$%^&*()_+-=[]{};,.<>/?`~abcdefghijklmnopq
 image = cv2.imread('/path/to/image.png')
 tess.set_image(image)
 print(tess.get_utf8_text())
+print("#####")
+print("Word\tConfidence\tBounding box coordinates")
+for word in t.words():
+	bb = word.bounding_box
+	print("{}\t{}\tt:{}; l:{}; r:{}; b:{}".format(word.text, word.confidence, bb.top, bb.left, bb.right, bb.bottom))
 ```
