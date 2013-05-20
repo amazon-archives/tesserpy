@@ -11,8 +11,6 @@ typedef struct {
 	PyObject *image;
 } PyTesseract;
 
-// TODO: module-level constants for PSM, OEM, etc.
-
 extern "C" {
 	static PyTesseract* PyTesseract_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 	static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs);
@@ -25,7 +23,7 @@ extern "C" {
 }
 
 static PyMethodDef PyTesseract_methods[] = {
-	{ "set_image", (PyCFunction)PyTesseract_set_image, METH_VARARGS, PyDoc_STR("set_image(image)\n\nProvides an image for Tesseract to recognize") },
+	{ "set_image", (PyCFunction)PyTesseract_set_image, METH_O, PyDoc_STR("set_image(image)\n\nProvides an image for Tesseract to recognize") },
 	{ "set_rectangle", (PyCFunction)PyTesseract_set_rectangle, METH_KEYWORDS, PyDoc_STR("set_rectangle(left, top, width, height)\n\nRestricts recognition to a sub-rectangle of the image.") },
 	{ "get_utf8_text", (PyCFunction)PyTesseract_get_utf8_text, METH_NOARGS, PyDoc_STR("get_utf8_text()\n\nReturns recognized text.") },
 	{ NULL, NULL } // sentinel
@@ -84,6 +82,26 @@ static PyTesseract* PyTesseract_new(PyTypeObject *type, PyObject* /* args */, Py
 	}
 	self->tess = new tesseract::TessBaseAPI();
 	self->image = NULL;
+
+	// TessOcrEngineMode
+	PyDict_SetItemString(type->tp_dict, "OEM_TESSERACT_ONLY", PyInt_FromLong(tesseract::OEM_TESSERACT_ONLY));
+	PyDict_SetItemString(type->tp_dict, "OEM_CUBE_ONLY", PyInt_FromLong(tesseract::OEM_CUBE_ONLY));
+	PyDict_SetItemString(type->tp_dict, "OEM_TESSERACT_CUBE_COMBINED", PyInt_FromLong(tesseract::OEM_TESSERACT_CUBE_COMBINED));
+	PyDict_SetItemString(type->tp_dict, "OEM_DEFAULT", PyInt_FromLong(tesseract::OEM_DEFAULT));
+
+	// TessPageSegMode
+	PyDict_SetItemString(type->tp_dict, "PSM_OSD_ONLY", PyInt_FromLong(tesseract::PSM_OSD_ONLY));
+	PyDict_SetItemString(type->tp_dict, "PSM_AUTO_OSD", PyInt_FromLong(tesseract::PSM_AUTO_OSD));
+	PyDict_SetItemString(type->tp_dict, "PSM_AUTO_ONLY", PyInt_FromLong(tesseract::PSM_AUTO_ONLY));
+	PyDict_SetItemString(type->tp_dict, "PSM_AUTO", PyInt_FromLong(tesseract::PSM_AUTO));
+	PyDict_SetItemString(type->tp_dict, "PSM_SINGLE_COLUMN", PyInt_FromLong(tesseract::PSM_SINGLE_COLUMN));
+	PyDict_SetItemString(type->tp_dict, "PSM_SINGLE_BLOCK_VERT_TEXT", PyInt_FromLong(tesseract::PSM_SINGLE_BLOCK_VERT_TEXT));
+	PyDict_SetItemString(type->tp_dict, "PSM_SINGLE_BLOCK", PyInt_FromLong(tesseract::PSM_SINGLE_BLOCK));
+	PyDict_SetItemString(type->tp_dict, "PSM_SINGLE_LINE", PyInt_FromLong(tesseract::PSM_SINGLE_LINE));
+	PyDict_SetItemString(type->tp_dict, "PSM_SINGLE_WORD", PyInt_FromLong(tesseract::PSM_SINGLE_WORD));
+	PyDict_SetItemString(type->tp_dict, "PSM_CIRCLE_WORD", PyInt_FromLong(tesseract::PSM_CIRCLE_WORD));
+	PyDict_SetItemString(type->tp_dict, "PSM_SINGLE_CHAR", PyInt_FromLong(tesseract::PSM_SINGLE_CHAR));
+	PyDict_SetItemString(type->tp_dict, "PSM_COUNT", PyInt_FromLong(tesseract::PSM_COUNT));
 	return self;
 }
 
@@ -160,9 +178,9 @@ static PyObject* PyTesseract_getattr(PyTesseract *self, PyObject *attr) {
 	return PyString_FromString(value.string());
 }
 
-static PyObject* PyTesseract_set_image(PyTesseract *self, PyObject *args) {
-	PyObject *array = NULL;
-	if (!PyArg_ParseTuple(args, "O:set_image", &array)) {
+static PyObject* PyTesseract_set_image(PyTesseract *self, PyObject *array) {
+	if (!PyArray_Check(array)) {
+		PyErr_SetString(PyExc_TypeError, "Image must be a NumPy array");
 		return NULL;
 	}
 
