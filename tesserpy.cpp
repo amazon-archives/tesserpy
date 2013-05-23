@@ -210,6 +210,7 @@ typedef struct {
 extern "C" {
 	static PyTesseract* PyTesseract_new(PyTypeObject *type, PyObject *args, PyObject *kwargs);
 	static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs);
+	static PyObject* PyTesseract_version(PyTesseract *self);
 	static PyObject* PyTesseract_clear(PyTesseract *self);
 	static int PyTesseract_setattr(PyTesseract *self, PyObject *attr, PyObject *value);
 	static PyObject* PyTesseract_getattr(PyTesseract *self, PyObject *attr);
@@ -227,6 +228,7 @@ extern "C" {
 }
 
 static PyMethodDef PyTesseract_methods[] = {
+	{ "version", (PyCFunction)PyTesseract_version, METH_NOARGS, PyDoc_STR("version()\n\nReturns the current Tesseract version as a string") },
 	{ "clear", (PyCFunction)PyTesseract_clear, METH_NOARGS, PyDoc_STR("clear()\n\nFrees up recognition results and any stored image data") },
 	{ "set_image", (PyCFunction)PyTesseract_set_image, METH_O, PyDoc_STR("set_image(image)\n\nProvides an image for Tesseract to recognize") },
 	{ "set_rectangle", (PyCFunction)PyTesseract_set_rectangle, METH_KEYWORDS, PyDoc_STR("set_rectangle(left, top, width, height)\n\nRestricts recognition to a sub-rectangle of the image.") },
@@ -435,6 +437,12 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 		PyErr_SetString(PyExc_EnvironmentError, "Error initializing Tesseract");
 	}
 	return result;
+}
+
+static PyObject* PyTesseract_version(PyTesseract *self) {
+	const char *version = self->tess->Version();
+	PyObject *py_version = PyString_FromString(version);
+	return py_version;
 }
 
 static PyObject* PyTesseract_clear(PyTesseract *self) {
