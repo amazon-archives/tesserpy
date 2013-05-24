@@ -672,4 +672,32 @@ PyMODINIT_FUNC inittesserpy(void) {
 
 	Py_INCREF(&PyTesseract_Type);
 	PyModule_AddObject(module, "Tesseract", (PyObject *)&PyTesseract_Type);
+
+	// CONSTANTS
+	// TessOcrEngineMode
+	PyModule_AddIntConstant(module, "OEM_TESSERACT_ONLY", tesseract::OEM_TESSERACT_ONLY);
+	PyModule_AddIntConstant(module, "OEM_CUBE_ONLY", tesseract::OEM_CUBE_ONLY);
+	PyModule_AddIntConstant(module, "OEM_TESSERACT_CUBE_COMBINED", tesseract::OEM_TESSERACT_CUBE_COMBINED);
+	PyModule_AddIntConstant(module, "OEM_DEFAULT", tesseract::OEM_DEFAULT);
+
+	// TessPageSegMode
+	PyModule_AddIntConstant(module, "PSM_OSD_ONLY", tesseract::PSM_OSD_ONLY);
+	PyModule_AddIntConstant(module, "PSM_AUTO_OSD", tesseract::PSM_AUTO_OSD);
+	PyModule_AddIntConstant(module, "PSM_AUTO_ONLY", tesseract::PSM_AUTO_ONLY);
+	PyModule_AddIntConstant(module, "PSM_AUTO", tesseract::PSM_AUTO);
+	PyModule_AddIntConstant(module, "PSM_SINGLE_COLUMN", tesseract::PSM_SINGLE_COLUMN);
+	PyModule_AddIntConstant(module, "PSM_SINGLE_BLOCK_VERT_TEXT", tesseract::PSM_SINGLE_BLOCK_VERT_TEXT);
+	PyModule_AddIntConstant(module, "PSM_SINGLE_BLOCK", tesseract::PSM_SINGLE_BLOCK);
+	PyModule_AddIntConstant(module, "PSM_SINGLE_LINE", tesseract::PSM_SINGLE_LINE);
+	PyModule_AddIntConstant(module, "PSM_SINGLE_WORD", tesseract::PSM_SINGLE_WORD);
+	PyModule_AddIntConstant(module, "PSM_CIRCLE_WORD", tesseract::PSM_CIRCLE_WORD);
+	PyModule_AddIntConstant(module, "PSM_SINGLE_CHAR", tesseract::PSM_SINGLE_CHAR);
+	PyModule_AddIntConstant(module, "PSM_COUNT", tesseract::PSM_COUNT);
+
+	// PageIteratorLevel
+	PyModule_AddIntConstant(module, "RIL_BLOCK", tesseract::RIL_BLOCK);
+	PyModule_AddIntConstant(module, "RIL_PARA", tesseract::RIL_PARA);
+	PyModule_AddIntConstant(module, "RIL_TEXTLINE", tesseract::RIL_TEXTLINE);
+	PyModule_AddIntConstant(module, "RIL_WORD", tesseract::RIL_WORD);
+	PyModule_AddIntConstant(module, "RIL_SYMBOL", tesseract::RIL_SYMBOL);
 }
