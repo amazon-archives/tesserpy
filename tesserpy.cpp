@@ -19,6 +19,7 @@ typedef struct {
 
 extern "C" {
 	static int PyBoundingBox_init(PyBoundingBox *self, PyObject *args, PyObject *kwargs);
+	static PyObject* PyBoundingBox_offset(PyBoundingBox *self, PyObject *args);
 }
 
 static PyMemberDef PyBoundingBox_members[] = {
@@ -27,6 +28,11 @@ static PyMemberDef PyBoundingBox_members[] = {
 	{ "top", T_INT, offsetof(PyBoundingBox, top), 0, PyDoc_STR("Top edge of the bounding box") },
 	{ "bottom", T_INT, offsetof(PyBoundingBox, bottom), 0, PyDoc_STR("Bottom edge of the bounding box") },
 	{ NULL }, // sentinel
+};
+
+static PyMethodDef PyBoundingBox_methods[] = {
+	{ "offset", (PyCFunction)PyBoundingBox_offset, METH_VARARGS, PyDoc_STR("offset(left_offset, top_offset)\n\nAdds a fixed offset to the coordinates in the bounding box") },
+	{ NULL, NULL } // sentinel
 };
 
 static PyTypeObject PyBoundingBox_Type = {
@@ -58,7 +64,7 @@ static PyTypeObject PyBoundingBox_Type = {
 	0, // tp_weaklistoffset
 	0, // tp_iter
 	0, // tp_iternext
-	0, // tp_methods
+	PyBoundingBox_methods, // tp_methods
 	PyBoundingBox_members, // tp_members
 	0, // tp_getset
 	0, // tp_base
@@ -296,6 +302,20 @@ static PyTypeObject PyTesseract_Type = {
 			return -1;
 		}
 		return 0;
+	}
+
+	static PyObject* PyBoundingBox_offset(PyBoundingBox *self, PyObject *args) {
+		int offset_x = -1;
+		int offset_y = -1;
+		if (!PyArg_ParseTuple(args, "ii:offset", &offset_x, &offset_y)) {
+			return NULL;
+		}
+		self->left += offset_x;
+		self->right += offset_x;
+		self->top += offset_y;
+		self->bottom += offset_y;
+		Py_INCREF(Py_None);
+		return Py_None;
 	}
 
 /* Result methods */
