@@ -1,10 +1,12 @@
 /* Copyright 2013 The Blindsight Corporation */
 
+// Code is clean against NumPy 1.7 API
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include <Python.h>
 #include <structmember.h>
 #include <tesseract/baseapi.h>
 #include <numpy/arrayobject.h>
-#include <iostream>
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
@@ -372,13 +374,26 @@ static PyResult* PyResultIterator_next(PyResultIterator *self) {
 	} else {
 		self->first = false;
 	}
-	const char *text = self->ri->GetUTF8Text(self->level);
-	float confidence = self->ri->Confidence(self->level);
 	PyBoundingBox *bounding_box = PyObject_New(PyBoundingBox, &PyBoundingBox_Type);
 	self->ri->BoundingBox(self->level, &bounding_box->left, &bounding_box->top, &bounding_box->right, &bounding_box->bottom);
-	PyObject *py_text = PyUnicode_FromString(text);
-	delete[] text;
-	text = NULL;
+
+	float confidence = 0.0f;
+	const char *text = self->ri->GetUTF8Text(self->level);
+	PyObject *py_text = NULL;
+	if (text) {
+		if (strlen(text)) {
+			py_text = PyUnicode_FromString(text);
+			confidence = self->ri->Confidence(self->level);
+		} else {
+			Py_INCREF(Py_None);
+			py_text = Py_None;
+		}
+		delete[] text;
+		text = NULL;
+	} else {
+		Py_INCREF(Py_None);
+		py_text = Py_None;
+	}
 	PyObject *args = Py_BuildValue("OOf", py_text, bounding_box, confidence);
 	PyResult *result = (PyResult *)PyObject_CallObject((PyObject *)&PyResult_Type, args);
 	Py_CLEAR(args);
