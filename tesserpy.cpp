@@ -83,6 +83,73 @@ static PyTypeObject PyBoundingBox_Type = {
 
 #define PyBoundingBox_Check(v) (Py_TYPE(v) == &PyBoundingBox_Type)
 
+// PageInfo
+typedef struct {
+	PyObject_HEAD
+	int orientation;
+	int writing_direction;
+	int textline_order;
+	float deskew_angle;
+} PyPageInfo;
+
+static PyMemberDef PyPageInfo_members[] = {
+	{ "orientation", T_INT, offsetof(PyPageInfo, orientation), 0, PyDoc_STR("Orientation of the block") },
+	{ "writing_direction", T_INT, offsetof(PyPageInfo, writing_direction), 0, PyDoc_STR("Writing direction of text in the block") },
+	{ "textline_order", T_INT, offsetof(PyPageInfo, textline_order), 0, PyDoc_STR("Order in which lines in the block are naturally read") },
+	{ "deskew_angle", T_FLOAT, offsetof(PyPageInfo, deskew_angle), 0, PyDoc_STR("After rotating the block so the text orientation is upright, how many radians one must rotate counterclockwise for it to be level") },
+	{ NULL }, // sentinel
+};
+
+static PyMethodDef PyPageInfo_methods[] = {
+	{ NULL, NULL } // sentinel
+};
+
+static PyTypeObject PyPageInfo_Type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	"tesserpy.PageInfo", // tp_name
+	sizeof(PyPageInfo), // tp_basicsize
+	0, // tp_itemsize
+	// methods
+	0, // tp_dealloc
+	0, // tp_print
+	0, // tp_getattr
+	0, // tp_setattr
+	0, // tp_compare
+	0, // tp_repr
+	0, // tp_as_number
+	0, // tp_as_sequence
+	0, // tp_as_mapping
+	0, // tp_hash
+	0, // tp_call
+	0, // tp_str
+	0, // tp_getattro
+	0, // tp_setattro
+	0, // tp_as_buffer
+	Py_TPFLAGS_DEFAULT, // tp_flags
+	PyDoc_STR("Orientation about the analyzed page"), // tp_doc
+	0, // tp_traverse
+	0, // tp_clear
+	0, // tp_richcompare
+	0, // tp_weaklistoffset
+	0, // tp_iter
+	0, // tp_iternext
+	PyPageInfo_methods, // tp_methods
+	PyPageInfo_members, // tp_members
+	0, // tp_getset
+	0, // tp_base
+	0, // tp_dict
+	0, // tp_descr_get
+	0, // tp_descr_set
+	0, // tp_dictoffset
+	0, // tp_init
+	0, // tp_alloc
+	0, // tp_new
+	0, // tp_free
+	0, // tp_is_gc
+};
+
+#define PyPageInfo_Check(v) (Py_TYPE(v) == &PyPageInfo_Type)
+
 // Result
 typedef struct {
 	PyObject_HEAD
@@ -154,6 +221,7 @@ typedef struct {
 	tesseract::ResultIterator *ri;
 	tesseract::PageIteratorLevel level;
 	bool first;
+	bool valid;
 } PyResultIterator;
 
 extern "C" {
@@ -212,7 +280,9 @@ static PyTypeObject PyResultIterator_Type = {
 typedef struct {
 	PyObject_HEAD
 	tesseract::TessBaseAPI *tess;
+	tesseract::PageIterator *page;
 	PyObject *image;
+	PyObject *iterators;
 } PyTesseract;
 
 extern "C" {
@@ -225,6 +295,7 @@ extern "C" {
 	static PyObject* PyTesseract_set_image(PyTesseract *self, PyObject *args);
 	static PyObject* PyTesseract_set_rectangle(PyTesseract *self, PyObject *args, PyObject *kwargs);
 	static PyObject* PyTesseract_recognize(PyTesseract *self);
+	static PyObject* PyTesseract_orientation(PyTesseract *self);
 	static PyObject* PyTesseract_get_utf8_text(PyTesseract *self);
 	static PyObject* PyTesseract_mean_text_conf(PyTesseract *self);
 	static PyResultIterator* PyTesseract_symbols(PyTesseract *self);
@@ -240,7 +311,8 @@ static PyMethodDef PyTesseract_methods[] = {
 	{ "clear", (PyCFunction)PyTesseract_clear, METH_NOARGS, PyDoc_STR("clear()\n\nFrees up recognition results and any stored image data") },
 	{ "set_image", (PyCFunction)PyTesseract_set_image, METH_O, PyDoc_STR("set_image(image)\n\nProvides an image for Tesseract to recognize") },
 	{ "set_rectangle", (PyCFunction)PyTesseract_set_rectangle, METH_KEYWORDS, PyDoc_STR("set_rectangle(left, top, width, height)\n\nRestricts recognition to a sub-rectangle of the image.") },
-	{ "recognize", (PyCFunction)PyTesseract_recognize, METH_NOARGS, PyDoc_STR("recognize()\n\nTells Tesseract to run OCR. This method usually gets called by anything dependent on OCR having run already; it's only included here so the user can run it earlier.") },
+	{ "recognize", (PyCFunction)PyTesseract_recognize, METH_NOARGS, PyDoc_STR("recognize()\n\nTells Tesseract to run OCR. This method usually gets called by anything dependent on OCR having run already; it's only included here so the user can run it earlier. Note that calling recognize() will invalidate any existing iterators.") },
+	{ "orientation", (PyCFunction)PyTesseract_orientation, METH_NOARGS, PyDoc_STR("orientation()\n\nReturns the detected page orientation, writing direction, line order, and deskew angle in a PageInfo object") },
 	{ "get_utf8_text", (PyCFunction)PyTesseract_get_utf8_text, METH_NOARGS, PyDoc_STR("get_utf8_text()\n\nReturns recognized text.") },
 	{ "mean_text_conf", (PyCFunction)PyTesseract_mean_text_conf, METH_NOARGS, PyDoc_STR("mean_text_conf()\n\nReturns the average word confidence value, between 0 and 100, for the Tesseract page result") },
 	{ "symbols", (PyCFunction)PyTesseract_symbols, METH_NOARGS, PyDoc_STR("symbols()\n\nReturns an iterator over all detected characters in the document") },
@@ -356,6 +428,7 @@ static PyResultIterator* PyResultIterator_new(PyTypeObject *type, PyObject* /* a
 	self->ri = NULL;
 	self->level = tesseract::RIL_BLOCK;
 	self->first = true;
+	self->valid = true;
 	return self;
 }
 
@@ -365,6 +438,10 @@ static PyResultIterator* PyResultIterator_iter(PyResultIterator *self) {
 }
 
 static PyResult* PyResultIterator_next(PyResultIterator *self) {
+	if (!self->valid) {
+		PyErr_SetString(PyExc_ValueError, "Iterator was invalidated");
+		return NULL;
+	}
 	if (!self->first) {
 		int success = self->ri->Next(self->level);
 		if (!success) {
@@ -447,7 +524,22 @@ static PyTesseract* PyTesseract_new(PyTypeObject *type, PyObject* /* args */, Py
 	return self;
 }
 
+static void PyTesseract_invalidate_iterators(PyTesseract *self) {
+	for (Py_ssize_t index = 0; index < PyList_Size(self->iterators); ++index) {
+		PyResultIterator *iterator = (PyResultIterator *)PyList_GetItem(self->iterators, index);
+		iterator->valid = false;
+	}
+}
+
 static void PyTesseract_dealloc(PyTesseract *self) {
+	if (self->iterators) {
+		PyTesseract_invalidate_iterators(self);
+		Py_CLEAR(self->iterators);
+	}
+	if (self->page) {
+		delete(self->page);
+		self->page = NULL;
+	}
 	if (self->tess) {
 		delete(self->tess);
 		self->tess = NULL;
@@ -467,6 +559,8 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|si", (char **)kwlist, &datapath, &language, &oem)) {
 		return -1;
 	}
+	self->page = NULL;
+	self->iterators = PyList_New(0);
 	int result = self->tess->Init(datapath, language, oem);
 	if (result) {
 		PyErr_SetString(PyExc_EnvironmentError, "Error initializing Tesseract");
@@ -586,6 +680,12 @@ static PyObject* PyTesseract_set_image(PyTesseract *self, PyObject *array) {
 
 	self->tess->SetImage((unsigned char *)PyArray_BYTES(np_array), cols, rows, bytes_per_pixel, bytes_per_pixel * cols);
 
+	PyTesseract_invalidate_iterators(self);
+	if (self->page) {
+		delete self->page;
+		self->page = NULL;
+	}
+
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -606,16 +706,40 @@ static PyObject* PyTesseract_set_rectangle(PyTesseract *self, PyObject *args, Py
 }
 
 static PyObject* PyTesseract_recognize(PyTesseract *self) {
+	PyTesseract_invalidate_iterators(self);
+	if (self->page) {
+		delete self->page;
+		self->page = NULL;
+	}
 	int error = self->tess->Recognize(NULL);
 	if (error) {
 		Py_INCREF(Py_False);
 		return Py_False;
 	}
+	self->page = self->tess->AnalyseLayout();
 	Py_INCREF(Py_True);
 	return Py_True;
 }
 
+static PyObject* PyTesseract_orientation(PyTesseract *self) {
+	if (!self->page) {
+		PyTesseract_recognize(self);
+	}
+	tesseract::Orientation orientation;
+	tesseract::WritingDirection direction;
+	tesseract::TextlineOrder line_order;
+	float deskew_angle;
+	self->page->Orientation(&orientation, &direction, &line_order, &deskew_angle);
+	PyPageInfo *page_info = (PyPageInfo *)PyObject_CallObject((PyObject *)&PyPageInfo_Type, (PyObject *)NULL);
+	page_info->orientation = (int)orientation;
+	page_info->writing_direction = (int)direction;
+	page_info->textline_order = (int)line_order;
+	page_info->deskew_angle = deskew_angle;
+	return (PyObject *)page_info;
+}
+
 static PyObject* PyTesseract_get_utf8_text(PyTesseract *self) {
+	PyTesseract_recognize(self);
 	char *text = self->tess->GetUTF8Text();
 	PyObject *unicode = PyUnicode_FromString(text);
 	delete(text);
@@ -633,6 +757,7 @@ static PyResultIterator *PyTesseract_iterator(PyTesseract *self) {
 	tesseract::ResultIterator *ri = self->tess->GetIterator();
 	PyResultIterator *iterator = (PyResultIterator *)PyObject_CallObject((PyObject *)&PyResultIterator_Type, (PyObject *)NULL);
 	iterator->ri = ri;
+	PyList_Append(self->iterators, (PyObject *)iterator);
 	return iterator;
 }
 
@@ -676,6 +801,11 @@ PyMODINIT_FUNC inittesserpy(void) {
 		return;
 	}
 
+	PyPageInfo_Type.tp_new = PyType_GenericNew;
+	if (PyType_Ready(&PyPageInfo_Type) < 0) {
+		return;
+	}
+
 	PyResult_Type.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&PyResult_Type) < 0) {
 		return;
@@ -698,6 +828,9 @@ PyMODINIT_FUNC inittesserpy(void) {
 
 	Py_INCREF(&PyBoundingBox_Type);
 	PyModule_AddObject(module, "BoundingBox", (PyObject *)&PyBoundingBox_Type);
+
+	Py_INCREF(&PyPageInfo_Type);
+	PyModule_AddObject(module, "PageInfo", (PyObject *)&PyPageInfo_Type);
 
 	Py_INCREF(&PyResult_Type);
 	PyModule_AddObject(module, "Result", (PyObject *)&PyResult_Type);
@@ -735,4 +868,20 @@ PyMODINIT_FUNC inittesserpy(void) {
 	PyModule_AddIntConstant(module, "RIL_TEXTLINE", tesseract::RIL_TEXTLINE);
 	PyModule_AddIntConstant(module, "RIL_WORD", tesseract::RIL_WORD);
 	PyModule_AddIntConstant(module, "RIL_SYMBOL", tesseract::RIL_SYMBOL);
+
+	// Orientation
+	PyModule_AddIntConstant(module, "ORIENTATION_PAGE_UP", tesseract::ORIENTATION_PAGE_UP);
+	PyModule_AddIntConstant(module, "ORIENTATION_PAGE_RIGHT", tesseract::ORIENTATION_PAGE_RIGHT);
+	PyModule_AddIntConstant(module, "ORIENTATION_PAGE_DOWN", tesseract::ORIENTATION_PAGE_DOWN);
+	PyModule_AddIntConstant(module, "ORIENTATION_PAGE_LEFT", tesseract::ORIENTATION_PAGE_LEFT);
+
+	// WritingDirection
+	PyModule_AddIntConstant(module, "WRITING_DIRECTION_LEFT_TO_RIGHT", tesseract::WRITING_DIRECTION_LEFT_TO_RIGHT);
+	PyModule_AddIntConstant(module, "WRITING_DIRECTION_RIGHT_TO_LEFT", tesseract::WRITING_DIRECTION_RIGHT_TO_LEFT);
+	PyModule_AddIntConstant(module, "WRITING_DIRECTION_TOP_TO_BOTTOM", tesseract::WRITING_DIRECTION_TOP_TO_BOTTOM);
+
+	// TextlineOrder
+	PyModule_AddIntConstant(module, "TEXTLINE_ORDER_LEFT_TO_RIGHT", tesseract::TEXTLINE_ORDER_LEFT_TO_RIGHT);
+	PyModule_AddIntConstant(module, "TEXTLINE_ORDER_RIGHT_TO_LEFT", tesseract::TEXTLINE_ORDER_RIGHT_TO_LEFT);
+	PyModule_AddIntConstant(module, "TEXTLINE_ORDER_TOP_TO_BOTTOM", tesseract::TEXTLINE_ORDER_TOP_TO_BOTTOM);
 }

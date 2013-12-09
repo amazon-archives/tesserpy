@@ -28,10 +28,13 @@ tess = tesserpy.Tesseract("/path/to/tessdata/prefix", language="eng")
 tess.tessedit_char_whitelist = """'"!@#$%^&*()_+-=[]{};,.<>/?`~abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"""
 image = cv2.imread('/path/to/image.png')
 tess.set_image(image)
+page_info = tess.orientation()
+print(page_info.textline_order == tesserpy.TEXTLINE_ORDER_TOP_TO_BOTTOM)
+print("#####")
 print(tess.get_utf8_text())
 print("#####")
 print("Word\tConfidence\tBounding box coordinates")
-for word in t.words():
+for word in tess.words():
 	bb = word.bounding_box
 	print("{}\t{}\tt:{}; l:{}; r:{}; b:{}".format(word.text, word.confidence, bb.top, bb.left, bb.right, bb.bottom))
 ```
