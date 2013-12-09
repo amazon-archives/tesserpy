@@ -93,9 +93,9 @@ typedef struct {
 } PyPageInfo;
 
 static PyMemberDef PyPageInfo_members[] = {
-	{ "orientation", T_INT, offsetof(PyPageInfo, orientation), 0, PyDoc_STR("Orientation of the block") },
-	{ "writing_direction", T_INT, offsetof(PyPageInfo, writing_direction), 0, PyDoc_STR("Writing direction of text in the block") },
-	{ "textline_order", T_INT, offsetof(PyPageInfo, textline_order), 0, PyDoc_STR("Order in which lines in the block are naturally read") },
+	{ "orientation", T_INT, offsetof(PyPageInfo, orientation), 0, PyDoc_STR("Orientation of the block; same enumeration as tesseract::ORIENTATION_*") },
+	{ "writing_direction", T_INT, offsetof(PyPageInfo, writing_direction), 0, PyDoc_STR("Writing direction of text in the block; same enumeration as tesseract::WRITING_DIRECTION_*") },
+	{ "textline_order", T_INT, offsetof(PyPageInfo, textline_order), 0, PyDoc_STR("Order in which lines in the block are naturally read; same enumeration as tesseract::TEXTLINE_ORDER_*") },
 	{ "deskew_angle", T_FLOAT, offsetof(PyPageInfo, deskew_angle), 0, PyDoc_STR("After rotating the block so the text orientation is upright, how many radians one must rotate counterclockwise for it to be level") },
 	{ NULL }, // sentinel
 };
@@ -126,7 +126,7 @@ static PyTypeObject PyPageInfo_Type = {
 	0, // tp_setattro
 	0, // tp_as_buffer
 	Py_TPFLAGS_DEFAULT, // tp_flags
-	PyDoc_STR("Orientation about the analyzed page"), // tp_doc
+	PyDoc_STR("Orientation and other information for the analyzed page"), // tp_doc
 	0, // tp_traverse
 	0, // tp_clear
 	0, // tp_richcompare
