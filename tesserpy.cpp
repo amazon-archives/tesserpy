@@ -811,7 +811,7 @@ static PyMethodDef TesserPyMethods[] = {
 #ifdef IS_PY3K
 #define INITERROR return NULL
 
-static struct PyModuleDef TesserPyModuleDef {
+static struct PyModuleDef TesserPyModuleDef = {
 	PyModuleDef_HEAD_INIT,
 	"tesserpy", // m_name
 	PyDoc_STR("A Python API for Tesseract"), // m_doc
