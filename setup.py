@@ -6,8 +6,9 @@ import numpy
 import os
 
 kVersionBase = '0.1dev'
+kStringEncoding = 'utf-8'
 
-version = kVersionBase + subprocess.check_output(['git', 'describe', '--dirty', '--always'])
+version = kVersionBase + subprocess.check_output(['git', 'describe', '--dirty', '--always']).decode(kStringEncoding)
 
 setup(
 		name = 'tesserpy',

@@ -7,6 +7,7 @@
 #include <structmember.h>
 #include <tesseract/baseapi.h>
 #include <numpy/arrayobject.h>
+#include "compat.hpp"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
@@ -556,9 +557,17 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 	tesseract::OcrEngineMode oem = tesseract::OEM_TESSERACT_ONLY;
 
 	static const char *kwlist[] = { "data_path", "language", "oem", NULL };
+#ifdef IS_PY3K
+	PyObject *py_datapath;
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O&|si", (char **)kwlist, PyUnicode_FSConverter, &py_datapath, &language, &oem)) {
+#else
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|si", (char **)kwlist, &datapath, &language, &oem)) {
+#endif
 		return -1;
 	}
+#ifdef IS_PY3K
+	datapath = PyBytes_AsString(py_datapath);
+#endif
 	self->page = NULL;
 	self->iterators = PyList_New(0);
 	int result = self->tess->Init(datapath, language, oem);
@@ -585,7 +594,7 @@ static PyObject* PyTesseract_clear(PyTesseract *self) {
 
 static int PyTesseract_setattr(PyTesseract *self, PyObject *attr, PyObject *py_value) {
 	// attribute name must be a string, but value will be converted with str()
-	char *name = PyString_AsString(attr);
+	const char *name = PyString_AsString(attr);
 	if (!name) {
 		PyErr_SetString(PyExc_TypeError, "Attribute name must be a string");
 		return -1;
@@ -597,7 +606,7 @@ static int PyTesseract_setattr(PyTesseract *self, PyObject *attr, PyObject *py_v
 		return -1;
 	}
 
-	char *value = PyString_AsString(py_value_str);
+	const char *value = PyString_AsString(py_value_str);
 	bool result = self->tess->SetVariable(name, value);
 	Py_CLEAR(py_value_str);
 	if (!result) {
@@ -614,7 +623,7 @@ static PyObject* PyTesseract_getattr(PyTesseract *self, PyObject *attr) {
 	}
 	PyErr_Clear();
 	// attribute name must be a string
-	char *name = PyString_AsString(attr);
+	const char *name = PyString_AsString(attr);
 	if (!name) {
 		PyErr_SetString(PyExc_TypeError, "Attribute name is not a string");
 		return NULL;
@@ -791,37 +800,67 @@ static PyResultIterator* PyTesseract_blocks(PyTesseract *self) {
 	return iterator;
 }
 
+typedef struct {
+	// This module has no state
+} PyModuleState;
+
 static PyMethodDef TesserPyMethods[] = {
 	{ NULL, NULL } // sentinel
 };
 
+#ifdef IS_PY3K
+#define INITERROR return NULL
+
+static struct PyModuleDef TesserPyModuleDef {
+	PyModuleDef_HEAD_INIT,
+	"tesserpy", // m_name
+	PyDoc_STR("A Python API for Tesseract"), // m_doc
+	sizeof(PyModuleState), // m_size
+	TesserPyMethods, // m_methods
+	NULL, // m_reload
+	NULL, // m_traverse
+	NULL, // m_clear
+	NULL // m_free
+};
+
+PyMODINIT_FUNC PyInit_tesserpy(void) {
+#else
+#define INITERROR return
+
 PyMODINIT_FUNC inittesserpy(void) {
+#endif
+
 	PyBoundingBox_Type.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&PyBoundingBox_Type) < 0) {
-		return;
+		INITERROR;
 	}
 
 	PyPageInfo_Type.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&PyPageInfo_Type) < 0) {
-		return;
+		INITERROR;
 	}
 
 	PyResult_Type.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&PyResult_Type) < 0) {
-		return;
+		INITERROR;
 	}
 
 	if (PyType_Ready(&PyResultIterator_Type) < 0) {
-		return;
+		INITERROR;
 	}
 
 	if (PyType_Ready(&PyTesseract_Type) < 0) {
-		return;
+		INITERROR;
 	}
 
+#ifdef IS_PY3K
+	PyObject *module = PyModule_Create(&TesserPyModuleDef);
+#else
 	PyObject *module = Py_InitModule("tesserpy", TesserPyMethods);
+#endif
+
 	if (module == NULL) {
-		return;
+		INITERROR;
 	}
 
 	import_array();
@@ -884,4 +923,7 @@ PyMODINIT_FUNC inittesserpy(void) {
 	PyModule_AddIntConstant(module, "TEXTLINE_ORDER_LEFT_TO_RIGHT", tesseract::TEXTLINE_ORDER_LEFT_TO_RIGHT);
 	PyModule_AddIntConstant(module, "TEXTLINE_ORDER_RIGHT_TO_LEFT", tesseract::TEXTLINE_ORDER_RIGHT_TO_LEFT);
 	PyModule_AddIntConstant(module, "TEXTLINE_ORDER_TOP_TO_BOTTOM", tesseract::TEXTLINE_ORDER_TOP_TO_BOTTOM);
+#ifdef IS_PY3K
+	return module;
+#endif
 }

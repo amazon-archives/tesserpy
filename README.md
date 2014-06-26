@@ -3,6 +3,12 @@ tesserpy
 
 A Python API for Tesseract
 
+Requirements
+------------
+* Python >= 2.7 or >= 3.2
+* NumPy >= 1.6
+* Tesseract >= 3.02
+
 Building
 --------
 It's the usual distutils dance -- run `python setup.py` for more details.
