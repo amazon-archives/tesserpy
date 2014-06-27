@@ -1,18 +1,11 @@
 # Copyright 2013 The Blindsight Corporation
 
 from distutils.core import setup, Extension
-import subprocess
 import numpy
-import os
-
-kVersionBase = '0.1dev'
-kStringEncoding = 'utf-8'
-
-version = kVersionBase + subprocess.check_output(['git', 'describe', '--dirty', '--always']).decode(kStringEncoding)
 
 setup(
 		name = 'tesserpy',
-		version = version,
+		version = '1.1.1',
 		description = 'Python interface to the Tesseract library',
 		maintainer = 'Kevin Rauwolf',
 		maintainer_email = 'kevin@blindsight.com',
