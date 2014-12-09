@@ -6,6 +6,7 @@
 #include <Python.h>
 #include <structmember.h>
 #include <tesseract/baseapi.h>
+#include <tesseract/strngs.h>
 #include <numpy/arrayobject.h>
 #include "compat.hpp"
 
