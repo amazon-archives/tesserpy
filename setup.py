@@ -5,7 +5,7 @@ import numpy
 
 setup(
 		name = 'tesserpy',
-		version = '1.1.1',
+		version = '1.1.2',
 		description = 'Python interface to the Tesseract library',
 		maintainer = 'Kevin Rauwolf',
 		maintainer_email = 'kevin@blindsight.com',
