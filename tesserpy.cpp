@@ -7,6 +7,7 @@
 #include <structmember.h>
 #include <tesseract/baseapi.h>
 #include <tesseract/strngs.h>
+#include <tesseract/resultiterator.h>
 #include <numpy/arrayobject.h>
 #include "compat.hpp"
 
