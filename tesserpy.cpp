@@ -8,6 +8,7 @@
 #include <tesseract/baseapi.h>
 #include <tesseract/strngs.h>
 #include <tesseract/resultiterator.h>
+#include <tesseract/genericvector.h>
 #include <numpy/arrayobject.h>
 #include "compat.hpp"
 
