@@ -348,7 +348,7 @@ static PyTypeObject PyTesseract_Type = {
 	(setattrofunc)PyTesseract_setattr, // tp_setattro
 	0, // tp_as_buffer
 	Py_TPFLAGS_DEFAULT, // tp_flags
-	PyDoc_STR("A single instance of a TessBaseAPI object"), // tp_doc
+	PyDoc_STR("A single instance of a TessBaseAPI object\n\nAvailable __init__ parameters (only 'data_path' is required; all others are optional keyword args):\ndata_path - path to a directory containing a 'tessdata' directory. This is overridden by many other things, such as the TESSDATA_PREFIX environment variable.\nlanguage - language(s) to load\noem - one of the OEM_* constants available in this module\nconfigs - a list of paths to Tesseract configuration files\nvars - variables to set at initialization; useful primarily for 'Init only' parameters\nset_only_non_debug_params - whether to load only parameters with names not beginning with 'debug'; defaults to False."), // tp_doc
 	0, // tp_traverse
 	0, // tp_clear
 	0, // tp_richcompare
@@ -557,13 +557,16 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 	char *datapath = NULL;
 	char *language = NULL;
 	tesseract::OcrEngineMode oem = tesseract::OEM_TESSERACT_ONLY;
+	PyObject *py_configs = NULL;
+	PyObject *py_vars = NULL;
+	int set_only_non_debug_params = 0;
 
-	static const char *kwlist[] = { "data_path", "language", "oem", NULL };
+	static const char *kwlist[] = { "data_path", "language", "oem", "configs", "vars", "set_only_non_debug_params", NULL };
 #ifdef IS_PY3K
 	PyObject *py_datapath;
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O&|si", (char **)kwlist, PyUnicode_FSConverter, &py_datapath, &language, &oem)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O&|siOOp", (char **)kwlist, PyUnicode_FSConverter, &py_datapath, &language, &oem, &py_configs, &py_vars, &set_only_non_debug_params)) {
 #else
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|si", (char **)kwlist, &datapath, &language, &oem)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|siOOi", (char **)kwlist, &datapath, &language, &oem, &py_configs, &py_vars, &set_only_non_debug_params)) {
 #endif
 		return -1;
 	}
@@ -572,7 +575,31 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 #endif
 	self->page = NULL;
 	self->iterators = PyList_New(0);
-	int result = self->tess->Init(datapath, language, oem);
+
+	char **configs = NULL;
+	size_t configs_size = 0;
+	if (py_configs && PySequence_Check(py_configs)) {
+		configs_size = PySequence_Length(py_configs);
+		configs = new char*[configs_size];
+		for (size_t idx = 0; idx < configs_size; ++idx) {
+			PyObject *config = PySequence_GetItem(py_configs, idx);
+			configs[idx] = PyString_AsString(config);
+		}
+	}
+
+	GenericVector<STRING> vars_vec;
+	GenericVector<STRING> vars_values;
+	if (py_vars && PyDict_Check(py_vars)) {
+		PyObject *key = NULL;
+		PyObject *value = NULL;
+		Py_ssize_t idx = 0;
+		while (PyDict_Next(py_vars, &idx, &key, &value)) {
+			vars_vec.push_back(PyString_AsString(key));
+			vars_values.push_back(PyString_AsString(value));
+		}
+	}
+	const int result = self->tess->Init(datapath, language, oem, configs, configs_size, &vars_vec, &vars_values, set_only_non_debug_params);
+	delete[] configs;
 	if (result) {
 		PyErr_SetString(PyExc_EnvironmentError, "Error initializing Tesseract");
 	}
