@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 import os.path
 
-kTessdataPrefix = '/usr/share/tesseract-ocr/'
+kTessdataPrefix = '/usr/share/'
 kTesseractLanguage = 'eng'
 kSampleFile = 'sample.npy'
 kSampleText = 'This is line one\nNow this is line two\n\n'
@@ -76,7 +76,7 @@ def test_get_words(tesseract, image):
 	tesseract.get_utf8_text() # FIXME: shouldn't be required
 	word_list = words()
 	for word in tesseract.words():
-		assert word.text == word_list.next()
+		assert word.text == next(word_list)
 
 def test_get_text_lines(tesseract, image):
 	def lines():
@@ -87,7 +87,7 @@ def test_get_text_lines(tesseract, image):
 	tesseract.get_utf8_text() # FIXME: shouldn't be required
 	line_list = lines()
 	for line in tesseract.text_lines():
-		assert line.text.strip() == line_list.next()
+		assert line.text.strip() == next(line_list)
 
 def test_get_mean_text_conf(tesseract, image):
 	tesseract.set_image(image)
