@@ -1,7 +1,20 @@
-# Copyright 2013 The Blindsight Corporation
+# Copyright 2015 The Blindsight Corporation
 
-from distutils.core import setup, Extension
+from distutils.core import setup, Extension, Command
 import numpy
+
+class PyTest(Command):
+	user_options = list()
+	def initialize_options(self):
+		pass
+
+	def finalize_options(self):
+		pass
+
+	def run(self):
+		import sys, subprocess
+		errno = subprocess.call([sys.executable, 'runtests.py'])
+		raise SystemExit(errno)
 
 setup(
 		name = 'tesserpy',
@@ -20,6 +33,7 @@ setup(
 			),
 		],
 		keywords = ['tesseract', 'ocr', ],
+		cmdclass = {'test': PyTest, },
 		classifiers = [
 			'Development Status :: 5 - Production/Stable',
 			'Intended Audience :: Science/Research',

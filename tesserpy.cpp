@@ -1,4 +1,4 @@
-/* Copyright 2013 The Blindsight Corporation */
+/* Copyright 2015 The Blindsight Corporation */
 
 // Code is clean against NumPy 1.7 API
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
