@@ -498,6 +498,8 @@ static PyTesseract* PyTesseract_new(PyTypeObject *type, PyObject* /* args */, Py
 	}
 	self->tess = new tesseract::TessBaseAPI();
 	self->image = NULL;
+	self->page = NULL;
+	self->iterators = NULL;
 
 	// TessOcrEngineMode
 	PyDict_SetItemString(type->tp_dict, "OEM_TESSERACT_ONLY", PyInt_FromLong(tesseract::OEM_TESSERACT_ONLY));
@@ -574,7 +576,6 @@ static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs)
 #ifdef IS_PY3K
 	datapath = PyBytes_AsString(py_datapath);
 #endif
-	self->page = NULL;
 	self->iterators = PyList_New(0);
 
 	char **configs = NULL;
