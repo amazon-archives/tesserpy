@@ -559,7 +559,7 @@ static void PyTesseract_dealloc(PyTesseract *self) {
 static int PyTesseract_init(PyTesseract *self, PyObject *args, PyObject *kwargs) {
 	char *datapath = NULL;
 	char *language = NULL;
-	tesseract::OcrEngineMode oem = tesseract::OEM_TESSERACT_ONLY;
+	tesseract::OcrEngineMode oem = tesseract::OEM_DEFAULT;
 	PyObject *py_configs = NULL;
 	PyObject *py_vars = NULL;
 	int set_only_non_debug_params = 0;
