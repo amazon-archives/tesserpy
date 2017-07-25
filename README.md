@@ -1,3 +1,7 @@
+
+**Archived**
+============
+
 **This repository is no longer being updated.** New development is happening in [rigorgt/tesserpy](https://github.com/rigorgt/tesserpy).
 
 tesserpy
